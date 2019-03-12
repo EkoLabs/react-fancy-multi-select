@@ -1,26 +1,55 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import './App.scss';
+import FancyMultiSelect from "./FancyMultiSelect/FancyMultiSelect";
+
+const possibleOptions = [
+  {
+    name: 'Principle',
+    value: 'Principle'
+  },
+  {
+    name: 'Sketch',
+    value: 'Sketch',
+  },
+  {
+    name: 'Photoshop',
+    value: 'Photoshop',
+  },
+  {
+    name: 'Framer',
+    value: 'Framer',
+  }
+];
 
 class App extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      selectedOptions: []
+    };
+  }
+
+  handleSelectOption(optionValue){
+    if (!this.state.selectedOptions.includes(optionValue)) {
+      this.setState({
+            selectedOptions: [
+              ...this.state.selectedOptions,
+              optionValue
+            ]
+          },
+          // () => console.log(this.state)
+      )
+    }
+  }
+
+
   render() {
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
-      </div>
+      <FancyMultiSelect
+          possibleOptions={possibleOptions}  
+          selectedOptions={this.state.selectedOptions}
+          onSelectOption={this.handleSelectOption.bind(this)}/>
     );
   }
 }
