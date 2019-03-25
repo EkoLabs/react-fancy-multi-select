@@ -2,7 +2,7 @@ import React from "react";
 import { TimelineMax, Power2} from 'gsap';
 import 'gsap/CSSPlugin'
 
-import {attachAnimation, registerAnimation, addAnimation} from "../AnimationOrchestrator";
+import {attachAnimation, addAnimation} from "../AnimationOrchestrator";
 
 
 const generateSelectAnimation = function(ref, options){
@@ -41,23 +41,9 @@ const generateMoveUpAnimation = function(ref, options){
 
     // element might have already been removed
     if (optionEl) {
-        tl.to(optionEl, 0.5, {
-            y: -72
-        });
-    }
-
-    return tl;
-};
-
-const generateResetAnimation = function(ref, options){
-    let tl = new TimelineMax();
-    let optionEl = ref.current;
-
-    // element might have already been removed
-    if (optionEl) {
-        tl.set(optionEl, {
-            y: 0
-        });
+        tl.fromTo(optionEl, 0.5,
+            { y: 72 },
+            { y: 0,  immediateRender:false })
     }
 
     return tl;
@@ -70,7 +56,6 @@ class Option extends React.Component {
         this.ref = React.createRef();
         this.props.registerAnimation(`option_select_${this.props.option.value}`, generateSelectAnimation, this.ref);
         this.props.registerAnimation(`option_moveup_${this.props.option.value}`, generateMoveUpAnimation, this.ref);
-        this.props.registerAnimation(`option_reset_${this.props.option.value}`, generateResetAnimation, this.ref);
     }
 
     onSelect(e){
@@ -81,11 +66,9 @@ class Option extends React.Component {
             animation: `option_select_${this.props.option.value}`,
             animationOptions: {
                 xOffset, yOffset
-            },
-            onComplete: ()=>{
-                this.props.onSelect(this.props.option.value);
             }
         }]);
+        this.props.onSelect(this.props.option.value);
     }
 
     render(){
@@ -97,5 +80,7 @@ class Option extends React.Component {
         )
     }
 }
+
+Option.displayName = 'Option';
 
 export default attachAnimation(Option);
