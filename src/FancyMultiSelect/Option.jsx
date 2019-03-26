@@ -7,10 +7,10 @@ import {attachAnimation, addAnimation} from "../AnimationOrchestrator";
 
 const generateSelectAnimation = function(ref, options){
     let tl = new TimelineMax();
-    let { xOffset, yOffset } = options;
+    let xOffset = options.x;
+    let yOffset = options.y;
     let optionEl = ref.current;
-
-    let [caption, activeBackground] = ['.caption','.activeBackground', '.frame'].map(selector=>optionEl.querySelector(selector));
+    let activeBackground = optionEl.querySelector('.activeBackground');
                         
     tl
         .set(activeBackground, {
@@ -52,23 +52,19 @@ const generateMoveUpAnimation = function(ref, options){
 class Option extends React.Component {
     constructor(props){
         super(props);
-
         this.ref = React.createRef();
         this.props.registerAnimation(`option_select_${this.props.option.value}`, generateSelectAnimation, this.ref);
         this.props.registerAnimation(`option_moveup_${this.props.option.value}`, generateMoveUpAnimation, this.ref);
     }
+    
 
     onSelect(e){
         let boundingRect = this.ref.current.getBoundingClientRect();
-        let xOffset =  e.clientX - boundingRect.left;
-        let yOffset =  e.clientY - boundingRect.top;
-        addAnimation([{
-            animation: `option_select_${this.props.option.value}`,
-            animationOptions: {
-                xOffset, yOffset
-            }
-        }]);
-        this.props.onSelect(this.props.option.value);
+        let offset = {
+            x: e.clientX - boundingRect.left,
+            y: e.clientY - boundingRect.top
+        };
+        this.props.onSelect(this.props.option.value, offset);
     }
 
     render(){

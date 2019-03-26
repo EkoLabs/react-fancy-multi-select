@@ -11,13 +11,23 @@ import SelectedOption from './SelectedOption';
 class FancyMultiSelect extends React.Component {
     constructor(props){
         super(props);
+        this.state = {
+            lastMouseOffset: {
+                x: 0,
+                y: 0
+            }
+        };
+
         this.ref = React.createRef();
         
         this.props.registerAnimation(`resizeSelectedOptionsContainer`, generateResizeSelectedOptionsContainer, this.ref);
     }
 
-    selectOption(optionValue){
+    selectOption(optionValue, offset){
         if (this.props.onSelectOption){
+            this.setState({
+                lastMouseOffset: offset
+            });
             this.props.onSelectOption(optionValue);
         }
     }
@@ -29,7 +39,7 @@ class FancyMultiSelect extends React.Component {
         this.props.possibleOptions.forEach(optionData => {
             // only show possible option if not already selected
             let shouldShow = !this.props.selectedOptions.includes(optionData.value);
-
+            
             possibleOptions.push(
                 <Option key={optionData.value}
                         option={optionData}
@@ -59,9 +69,9 @@ class FancyMultiSelect extends React.Component {
 export default attachAnimation(FancyMultiSelect, [
     {
         id: 'selectOption',
-        trigger: function(triggerComponent, prevProps){
+        trigger: function(triggerComponent, prevProps, nextProps){
                 // a new selected option was added
-                return triggerComponent.props.selectedOptions.length === prevProps.selectedOptions.length + 1;
+                return nextProps.selectedOptions.length === prevProps.selectedOptions.length + 1;
                 
             },
         // this function is evaluated dynamically at runtime to determine which animations should be added
@@ -80,7 +90,13 @@ export default attachAnimation(FancyMultiSelect, [
                 animation: `selectedoption_reset_${addedOption}`,
                 position: 0
             });
-            
+
+            // option disappear animation
+            animationsToAdd.push({
+                animation: `option_select_${addedOption}`,
+                animationOptions: triggerComponent.state.lastMouseOffset
+            });
+
             for (let x=addedOptionIndex+1; x<props.possibleOptions.length; x++){
                 let firstAnimation = x === addedOptionIndex+1;
                 
@@ -122,7 +138,7 @@ const generateResizeSelectedOptionsContainer= function(ref, animationOptions){
     // more complicated implementation might want to check how many options
     // actually fit and how to resize accordingly
     tl.to(selectedOptionsContainer, 0.4, {
-        height: 72 * (1+ Math.floor(animationOptions.selectedOptions.length/2))
+        height: 72 * (1+ Math.floor((animationOptions.selectedOptions.length -1)/2))
     });
 
     return tl;

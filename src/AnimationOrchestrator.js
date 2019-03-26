@@ -78,49 +78,85 @@ function attachAnimation(WrappedComponent, scenariosConfig = []){
                 animations: {},
                 runningAnimations: {},
                 preparingToAnimate: false,
+                evaluatingAnimations: false,
+                removeCandidate: false,
                 instance: this
             };
 
             this.wrappedComponentRef = React.createRef();
         }
 
-        componentDidMount(){
-            components[this.animationComponentId].mounted = true;
-        }
-
-        componentWillUnmount(){
-            components[this.animationComponentId].mounted = false;
-        }
-
-        componentDidUpdate(prevProps){
-            scenariosConfig
+        // decide whether to animate this element
+        // don't worry I know what I'm doing
+        UNSAFE_componentWillUpdate(nextProps, nextState){
             // we're only interested in scenarios that have triggers
-                .filter ( scenariosConfig => 'trigger' in scenariosConfig)
-                // if multiple scenarios are defined, we only run the first one reached
-                .some( scenarioConfig => this.testScenario(scenarioConfig, prevProps));
+            let scenarios = scenariosConfig.filter(scenariosConfig => 'trigger' in scenariosConfig);
+            let matchedScenario;
+
+            // if multiple scenarios are defined, we only run the first one reached
+            scenarios.some( scenarioConfig => {
+                let scenarioTest = this.testScenario(scenarioConfig, this.props, nextProps);
+                if (scenarioTest.result){
+                    matchedScenario = scenarioTest;
+                    return true;
+                } else {
+                    return false
+                }
+
+            });
+
+            
+            if (matchedScenario){
+                // save this until componentDidUpdate
+                this.matchedScenario = matchedScenario
+            }
+
+            components[this.animationComponentId].evaluatingAnimations = true;
+            // when switching from shouldShow=true to false, we need to wait until all components finished
+            // evaluating which animations are running in real-time so that the component does not get removed
+            // from the DOM prematurely
+            if (this.props.shouldShow && !nextProps.shouldShow){
+                components[this.animationComponentId].removeCandidate = true;
+            }
         }
 
-        testScenario(scenarioConfig, prevProps){
+        componentDidUpdate(prevProps, prevState){
+            let matchedScenario = this.matchedScenario;
+            if (matchedScenario){
+                delete this.matchedScenario;
+                
+                if (matchedScenario.firedTriggerConfig){
+                    if (globalOptions.onScenarioTriggered) {
+                        globalOptions.onScenarioTriggered(matchedScenario.scenarioConfig);
+                    }
+                    this.addScenarioAnimations(matchedScenario.scenarioConfig, prevProps, matchedScenario.firedTriggerConfig);
+                }
+            }
+
+            components[this.animationComponentId].evaluatingAnimations = false;
+            components[this.animationComponentId].removeCandidate = false
+        }
+
+        testScenario(scenarioConfig, prevProps, nextProps){
             // ensure we have triggers as an array
             let triggerArray = Array.isArray(scenarioConfig.trigger) ? scenarioConfig.trigger : [scenarioConfig.trigger];
-            let firedTriggerConfig = triggerArray.find(triggerConfig => this.testTrigger(triggerConfig, prevProps) );
-            if (firedTriggerConfig){
-                if (globalOptions.onScenarioTriggered) {
-                    globalOptions.onScenarioTriggered(scenarioConfig);
-                }
-                this.addScenarioAnimations(scenarioConfig, prevProps, firedTriggerConfig);
-            }
+            // find the first trigger that fires (no need to find further triggers - because the scenario is either triggered or not)
+            let firedTriggerConfig = triggerArray.find(triggerConfig => this.testTrigger(triggerConfig, prevProps, nextProps) );
 
-            return firedTriggerConfig !== undefined;
+            return {
+                result: firedTriggerConfig !== undefined,
+                scenarioConfig,
+                firedTriggerConfig
+            }
         }
 
-        testTrigger(triggerConfig, prevProps){
+        testTrigger(triggerConfig, prevProps, nextProps){
             if (typeof triggerConfig === 'object'){
                 return triggerConfig.select(prevProps) === triggerConfig.value &&
-                    triggerConfig.select(this.props) === triggerConfig.nextValue;
+                    triggerConfig.select(nextProps) === triggerConfig.nextValue;
             }
             else if (typeof triggerConfig === 'function'){
-                return triggerConfig(this.wrappedComponentRef.current, prevProps);
+                return triggerConfig(this.wrappedComponentRef.current, prevProps, nextProps);
             }
         }
 
@@ -171,6 +207,9 @@ function attachAnimation(WrappedComponent, scenariosConfig = []){
                     timeline = timelineOrTimelineId
                 }
 
+                // actual animation start will happen in future cycles, for now we want to mark this component as animating
+                components[this.animationComponentId].preparingToAnimate = true;
+
                 function attachCallbackToTl(callbackType, callbackFunction, params){
                     let references = {
                         animationComponent: componentData.instance.wrappedComponentRef.current
@@ -194,9 +233,6 @@ function attachAnimation(WrappedComponent, scenariosConfig = []){
                     animationTlToAdd.eventCallback(callbackType, gsapCallback, ['{self}']);
                 }
 
-                // actual animation start will happen in future cycles, for now we want to mark this component as animating
-                components[this.animationComponentId].preparingToAnimate = true;
-
                 attachCallbackToTl("onStart", (...args) => {
                     components[this.animationComponentId].preparingToAnimate = false;
                     components[this.animationComponentId].runningAnimations[animationConfig.animation] = true;
@@ -218,10 +254,10 @@ function attachAnimation(WrappedComponent, scenariosConfig = []){
                         animationConfig.onComplete(...args);
                     }
 
-                    if (options.lastAnimationInScenario){
-                        // force the react component to re-render, in case we need to remove it from the DOM
-                        this.forceUpdate();
+                    // force the react component to re-render, in case we need to remove it from the DOM
+                    this.forceUpdate();
 
+                    if (options.lastAnimationInScenario){
                         if (options.scenarioConfig && globalOptions.onScenarioComplete) {
                             globalOptions.onScenarioComplete.apply([...args, options.scenarioConfig, options.triggerConfig]);
                         }
@@ -238,7 +274,7 @@ function attachAnimation(WrappedComponent, scenariosConfig = []){
                 if (animationConfig.position === 'withPrev'){
                     let newPosition = 0;
                     let timelineChildren = timeline.getChildren(false);
-                    if (timelineChildren .length > 0) {
+                    if (timelineChildren.length > 0) {
                         let previousTimeline = timelineChildren[timelineChildren.length - 1];
                         newPosition = previousTimeline.startTime();
                     }
@@ -250,7 +286,7 @@ function attachAnimation(WrappedComponent, scenariosConfig = []){
 
         registerAnimation(animationId, generatorFunc, elementRef) {
             let componentAnimations = components[this.animationComponentId].animations;
-
+            
             if (animationId in componentAnimations){
                 error(`animationId ${animationId} already registered`);
             }
@@ -268,7 +304,7 @@ function attachAnimation(WrappedComponent, scenariosConfig = []){
             return scenariosConfig;
         }
 
-        render() {
+        render(){
             let augmentedProps = {
                 ...this.props,
                 registerAnimation: this.registerAnimation.bind(this),
@@ -276,12 +312,19 @@ function attachAnimation(WrappedComponent, scenariosConfig = []){
             };
 
             let component = components[this.animationComponentId];
+            let shouldShowInProps = 'shouldShow' in this.props;
             // if shouldShow is specified, then component will be displayed as long as it has a running animation
             let hasRunningAnimations = component.preparingToAnimate ||
                                         Object.values(component.runningAnimations).some(isRunning=>isRunning);
-            
-            if ('shouldShow' in this.props === false ||
-                ('shouldShow' in this.props && (this.props.shouldShow === true || hasRunningAnimations))){
+            let isRemoveCandidate = component.removeCandidate;
+            let isSomeComponentEvaluatingAnimations = Object.values(components).some(component=> component.evaluatingAnimations);
+
+            if (shouldShowInProps === false ||
+                (shouldShowInProps &&
+                    (this.props.shouldShow === true ||
+                        hasRunningAnimations ||
+                        (isRemoveCandidate && isSomeComponentEvaluatingAnimations)
+                    ))){
                 return <WrappedComponent ref={this.wrappedComponentRef} { ...augmentedProps} />;
             } else {
                     return null;

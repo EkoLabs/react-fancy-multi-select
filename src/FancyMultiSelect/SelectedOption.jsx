@@ -28,9 +28,10 @@ class SelectedOption extends React.Component {
 
 SelectedOption.displayName = 'SelectedOption';
 
-/**** animation definitions ***/
+/**** animations definitions ***/
 
 const generateShowSelectedOption = function(ref){
+    
     let tl = new TimelineMax();
     let optionEl = ref.current;
     let [caption, close, frame] = ['.caption','.close', '.frame'].map(selector=>optionEl.querySelector(selector));
