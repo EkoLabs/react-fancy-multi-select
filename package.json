@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@ekolabs/react-animation-orchestrator": "^1.0.0",
     "gsap": "^2.1.2",
     "node-sass": "^4.11.0",
     "react": "^16.8.4",

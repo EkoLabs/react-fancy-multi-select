@@ -2,8 +2,7 @@ import React from "react";
 import { TimelineMax, Power2} from 'gsap';
 import 'gsap/CSSPlugin'
 
-import {attachAnimation, addAnimation} from "../AnimationOrchestrator";
-
+import { attachAnimation } from "@ekolabs/react-animation-orchestrator";
 
 const generateSelectAnimation = function(ref, options){
     let tl = new TimelineMax();
@@ -11,7 +10,7 @@ const generateSelectAnimation = function(ref, options){
     let yOffset = options.y;
     let optionEl = ref.current;
     let activeBackground = optionEl.querySelector('.activeBackground');
-                        
+
     tl
         .set(activeBackground, {
             scale: 0.1,

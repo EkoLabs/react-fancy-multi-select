@@ -12,3 +12,9 @@ body{
   justify-content: center;
   background: #eef0f5;
 }
+
+.githubRibbon{
+  position: absolute;
+  top: 0;
+  left: 0;
+}

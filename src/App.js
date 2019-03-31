@@ -37,8 +37,7 @@ class App extends Component {
               ...this.state.selectedOptions,
               optionValue
             ]
-          },
-          // () => console.log(this.state)
+          }
       )
     }
   }

@@ -1,6 +1,7 @@
 import React from 'react';
 import './FancyMultiSelect.scss';
-import { attachAnimation } from "../AnimationOrchestrator";
+
+import { attachAnimation } from "@ekolabs/react-animation-orchestrator";
 
 import { TimelineMax } from 'gsap';
 import 'gsap/CSSPlugin'
@@ -88,7 +89,7 @@ export default attachAnimation(FancyMultiSelect, [
             // reset new option to the before show animation
             animationsToAdd.push({
                 animation: `selectedoption_reset_${addedOption}`,
-                position: 0
+                position: 0 // we want the reset to happen instantly
             });
 
             // option disappear animation

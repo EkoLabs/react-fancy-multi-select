@@ -2,7 +2,7 @@ import React from "react";
 import { TimelineMax, Elastic} from 'gsap';
 import 'gsap/CSSPlugin'
 
-import {attachAnimation, addAnimation} from "../AnimationOrchestrator";
+import { attachAnimation } from "@ekolabs/react-animation-orchestrator";
 
 import "./SelectedOption.scss";
 
