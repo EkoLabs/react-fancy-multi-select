@@ -18,14 +18,14 @@ const generateSelectAnimation = function(ref, options){
             opacity: 0,
             left: xOffset,
             top: yOffset
-        }, 0)
+        })
         .set(optionEl, { webkitClipPath: `circle(150% at ${xOffset}px ${yOffset}px)` })
-        .to(activeBackground, 0.5, {
+        .to(activeBackground, 0.3, {
             scale: 1.5,
             transformOrigin: 'center',
             opacity: 1,
             ease: Power2.easeOut
-        }, 0)
+        })
         .to(optionEl, 0.5, {
             webkitClipPath: `circle(0.1% at ${xOffset}px ${yOffset}px)`,
             ease: Power2.easeOut
